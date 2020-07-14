@@ -1,13 +1,12 @@
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import MyWine from './components/Home';
+import Scanner from './Scanner';
 
-export default function App() {
+export default function MyWine() {
   return (
     <View style={styles.container}>
-      <MyWine />
-      <StatusBar style='auto' />
+      <Text>my Wine</Text>
+      <Scanner />
     </View>
   );
 }
