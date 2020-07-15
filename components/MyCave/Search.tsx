@@ -4,7 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { Camera } from 'expo-camera';
 import Icon from 'react-native-vector-icons/AntDesign';
 import { Button } from 'native-base';
-import googleCloud from '../config/config';
+import googleCloud from '../../config/config';
 
 interface Props {}
 
@@ -15,9 +15,10 @@ interface State {
   photo: string;
   fullTextAnnotation: string;
   uri: string;
+  searchResult: any;
 }
 
-export default class Scanner extends PureComponent<Props, State> {
+export default class Search extends PureComponent<Props, State> {
   constructor(props: Props) {
     super(props);
 
@@ -28,6 +29,7 @@ export default class Scanner extends PureComponent<Props, State> {
       photo: '',
       fullTextAnnotation: '',
       uri: '',
+      searchResult: [],
     };
 
     this.setHasPermission = this.setHasPermission.bind(this);
@@ -35,6 +37,8 @@ export default class Scanner extends PureComponent<Props, State> {
     this.setScanning = this.setScanning.bind(this);
     this.setSnap = this.setSnap.bind(this);
     this.callGoogleVIsionApi = this.callGoogleVIsionApi.bind(this);
+    this.scraper = this.scraper.bind(this);
+    this.clickList = this.clickList.bind(this);
   }
 
   componentDidMount() {
@@ -76,8 +80,8 @@ export default class Scanner extends PureComponent<Props, State> {
           photo: photo.base64,
           scanning: false,
           uri: photo.uri,
-        }
-        // () => this.callGoogleVIsionApi(this.state.photo)
+        },
+        () => this.callGoogleVIsionApi(this.state.photo)
       );
     }
   };
@@ -96,7 +100,6 @@ export default class Scanner extends PureComponent<Props, State> {
               { type: 'LABEL_DETECTION', maxResults: 10 },
               { type: 'TEXT_DETECTION', maxResults: 5 },
               { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 5 },
-              { type: 'CROP_HINTS', maxResults: 5 },
               { type: 'WEB_DETECTION', maxResults: 5 },
             ],
           },
@@ -105,12 +108,74 @@ export default class Scanner extends PureComponent<Props, State> {
     })
       .then((res) => res.json())
       .then((data) => {
-        this.setState({
-          fullTextAnnotation: data.responses[0].fullTextAnnotation.text,
-        });
+        console.log(
+          'fullTextAnnotation:',
+          data.responses[0].fullTextAnnotation.text
+        );
+        this.setState(
+          {
+            fullTextAnnotation: data.responses[0].fullTextAnnotation.text,
+          },
+          this.scraper
+        );
       })
       .catch((err) => console.log('error : ', err));
   };
+
+  scraper() {
+    const url =
+      'http://192.168.35.225:4000/search?keyword=' +
+      this.state.fullTextAnnotation.split(' ').join('+');
+    fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((res) => {
+        if (res.status === 200) {
+          return res.json();
+        }
+        return '';
+      })
+      .then((data) => {
+        if (typeof data === 'object') {
+          this.setState(
+            {
+              searchResult: data,
+            },
+            () => console.log('searchResult', this.state.searchResult)
+          );
+        }
+      })
+      .catch((err) => {
+        console.log('err is', err);
+      });
+  }
+
+  clickList(index: number) {
+    const url =
+      'http://192.168.35.225:4000/search/getDesc?url=' +
+      this.state.searchResult[index].link;
+    fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((res) => {
+        if (res.status === 200) {
+          return res.json();
+        }
+        return '';
+      })
+      .then((data) => {
+        if (typeof data === 'object') {
+          console.log('clickList', data);
+        }
+      })
+      .catch((err) => {
+        console.log('err is', err);
+      });
+  }
 
   render() {
     return (
@@ -163,14 +228,30 @@ export default class Scanner extends PureComponent<Props, State> {
             {this.state.uri === '' ? (
               <></>
             ) : (
-              <Image
-                style={{
-                  width: 100,
-                  height: 100,
-                  resizeMode: 'contain',
-                }}
-                source={{ uri: this.state.uri }}
-              />
+              <>
+                <Image
+                  style={{
+                    width: 100,
+                    height: 100,
+                    resizeMode: 'contain',
+                  }}
+                  source={{ uri: this.state.uri }}
+                />
+                {this.state.searchResult.length > 0 ? (
+                  this.state.searchResult.map((result: any, index: number) => {
+                    return (
+                      <View key={index} style={styles.wineList}>
+                        <Text onPress={() => this.clickList(index)}>
+                          {result.name}
+                        </Text>
+                        <Text>{result.review}</Text>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <></>
+                )}
+              </>
             )}
           </>
         )}
@@ -180,24 +261,11 @@ export default class Scanner extends PureComponent<Props, State> {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column',
-    backgroundColor: 'black',
-  },
-  preview: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  capture: {
-    flex: 0,
+  wineList: {
     backgroundColor: '#fff',
-    borderRadius: 5,
-    padding: 15,
-    paddingHorizontal: 20,
-    alignSelf: 'center',
-    margin: 20,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

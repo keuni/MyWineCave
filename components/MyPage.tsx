@@ -1,12 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Scanner from './Scanner';
 
-export default function MyWine() {
+export default function MyPage() {
   return (
     <View style={styles.container}>
-      <Text>my Wine</Text>
-      <Scanner />
+      <Text>my page</Text>
     </View>
   );
 }

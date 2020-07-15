@@ -1,22 +1,20 @@
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import MyWine from './components/Home';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import Index from './components/index';
+import { AppRegistry } from 'react-native';
+import rootReducer from './reducers';
+import BottomTab from './components/BottomTab';
+
+const store = createStore(rootReducer);
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <MyWine />
-      <StatusBar style='auto' />
-    </View>
+    <Provider store={store}>
+      {/* <Index /> */}
+      <BottomTab />
+    </Provider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+AppRegistry.registerComponent('MYWINE', () => App);
